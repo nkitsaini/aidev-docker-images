@@ -17,6 +17,13 @@ RUN curl -sSL https://github.com/chmln/sd/releases/download/v1.1.0/sd-v1.1.0-x86
     && mv /tmp/sd-v1.1.0-x86_64-unknown-linux-gnu/sd /usr/local/bin/sd \
     && rm -rf /tmp/sd-v1.1.0-x86_64-unknown-linux-gnu
 
+COPY ./requirements-vastai-pytorch.txt /tmp/requirements.txt
+
+# Just to populate the cache
+RUN uv venv /tmp/dummy-venv && \
+    uv pip install --python /tmp/dummy-venv -r /tmp/requirements.txt && \
+    rm -rf /tmp/dummy-venv
+
 # Copy the dummy bash script to /usr/local/bin and make it executable
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
