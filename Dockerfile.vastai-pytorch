@@ -1,0 +1,27 @@
+FROM vastai/pytorch:cuda-13.2.1-auto
+
+# Avoid prompts during apt installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update system package manager and install fzf and ripgrep
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    fzf \
+    ripgrep \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install sd (search & replace tool)
+RUN curl -sSL https://github.com/chmln/sd/releases/download/v1.1.0/sd-v1.1.0-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C /tmp \
+    && mv /tmp/sd-v1.1.0-x86_64-unknown-linux-gnu/sd /usr/local/bin/sd \
+    && rm -rf /tmp/sd-v1.1.0-x86_64-unknown-linux-gnu
+
+# Copy the dummy bash script to /usr/local/bin and make it executable
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD []
+
+# Set the default working directory
+WORKDIR /workspace
