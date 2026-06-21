@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     fzf \
     ripgrep \
+    mosh \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install sd (search & replace tool)
