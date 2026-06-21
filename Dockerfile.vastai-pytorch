@@ -20,7 +20,7 @@ RUN curl -sSL https://github.com/chmln/sd/releases/download/v1.1.0/sd-v1.1.0-x86
 COPY ./requirements-vastai-pytorch.txt /tmp/requirements.txt
 
 # Just to populate the cache
-RUN uv venv /tmp/dummy-venv && \
+RUN uv venv --python 3.13 /tmp/dummy-venv && \
     uv pip install --python /tmp/dummy-venv -r /tmp/requirements.txt && \
     rm -rf /tmp/dummy-venv
 
