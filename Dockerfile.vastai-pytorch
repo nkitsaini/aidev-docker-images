@@ -24,7 +24,7 @@ ENV UV_NO_CACHE=0
 ENV UV_LINK_MODE=copy
 
 # Just to populate the cache
-RUN uv venv --python 3.12 /tmp/dummy-venv # download 3.12
+RUN uv venv --python 3.14 /tmp/dummy-venv # download python version as a pre-step
 RUN  uv pip install --no-verify-hashes --index-strategy unsafe-best-match --python /tmp/dummy-venv -r /tmp/pylock.toml && \
     rm -rf /tmp/dummy-venv
 
