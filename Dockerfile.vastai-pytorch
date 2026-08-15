@@ -1,39 +1,38 @@
-FROM vastai/pytorch:cuda-13.3.1-auto
+# syntax=docker/dockerfile:1.7
 
-# Avoid prompts during apt installation
-ENV DEBIAN_FRONTEND=noninteractive
+# The locked PyTorch wheels include the CUDA 13 runtime libraries they need.
+# A CUDA devel image would duplicate those libraries and add a toolkit that this
+# project does not use. Keep an explicit, dated Vast tag so builds are repeatable.
+FROM vastai/base-image:stock-ubuntu24.04-py314-2026-08-06
 
-# Update system package manager and install fzf and ripgrep
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    git \
-    fzf \
-    ripgrep \
-    mosh \
+ENV DEBIAN_FRONTEND=noninteractive \
+    UV_NO_CACHE=0 \
+    UV_LINK_MODE=copy
+
+# curl and git are already provided by the Vast base image. Ubuntu 24.04 also
+# packages sd, so all additional command-line tools can share one small layer.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        fzf \
+        mosh \
+        ripgrep \
+        sd \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and install sd (search & replace tool)
-RUN curl -sSL https://github.com/chmln/sd/releases/download/v1.1.0/sd-v1.1.0-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C /tmp \
-    && mv /tmp/sd-v1.1.0-x86_64-unknown-linux-gnu/sd /usr/local/bin/sd \
-    && rm -rf /tmp/sd-v1.1.0-x86_64-unknown-linux-gnu
+# Populate uv's persistent cache with the exact project lock. The throwaway
+# environment is created and removed in the same layer, so only reusable cache
+# artifacts remain in the final image. clone is safe and fast here because the
+# environment and cache are on the same filesystem; runtime installs retain
+# copy mode for compatibility with a mounted /workspace.
+RUN --mount=type=bind,source=pylock.toml,target=/tmp/pylock.toml,readonly \
+    uv venv --python /venv/main/bin/python /tmp/cache-warm-venv \
+    && UV_LINK_MODE=clone uv pip install \
+        --no-verify-hashes \
+        --python /tmp/cache-warm-venv \
+        -r /tmp/pylock.toml \
+    && rm -rf /tmp/cache-warm-venv
 
-COPY ./pylock.toml /tmp/pylock.toml
-
-ENV UV_NO_CACHE=0
-# Ignore issues with volumes
-ENV UV_LINK_MODE=copy
-
-# Just to populate the cache
-RUN uv venv --python 3.14 /tmp/dummy-venv # download python version as a pre-step
-RUN  uv pip install --no-verify-hashes --index-strategy unsafe-best-match --python /tmp/dummy-venv -r /tmp/pylock.toml && \
-    rm -rf /tmp/dummy-venv
-
-# Copy the dummy bash script to /usr/local/bin and make it executable
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD []
-
-# Set the default working directory
+# Inherit Vast's entrypoint directly; the previous wrapper only exec'd this
+# same file and created two unnecessary image layers.
 WORKDIR /workspace
