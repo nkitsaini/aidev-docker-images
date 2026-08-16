@@ -33,11 +33,16 @@ RUN --mount=type=bind,source=pylock.toml,target=/tmp/pylock.toml,readonly \
         -r /tmp/pylock.toml \
     && rm -rf /tmp/cache-warm-venv
 
-# Vast injects instance metadata (such as VAST_CONTAINERLABEL) at container
-# creation. Its entrypoint runs the boot hooks that persist that metadata to
-# /etc/environment, making it available in SSH and Jupyter shells. Set this
-# explicitly so startup does not depend on inherited image configuration.
-ENTRYPOINT ["/opt/instance-tools/bin/entrypoint.sh"]
+# Vast's SSH/Jupyter direct mode replaces the image entrypoint with /.launch,
+# but /.launch executes /etc/rc.local. Point that hook at the same entrypoint so
+# both modes run Vast's complete /etc/vast_boot.d initialization pipeline. The
+# stock base already contains this machinery, so matching the *-auto behavior
+# does not require restoring its large CUDA/PyTorch layers.
+COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod 0755 /usr/local/bin/entrypoint.sh \
+    && ln -sf /usr/local/bin/entrypoint.sh /etc/rc.local
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD []
 
 WORKDIR /workspace

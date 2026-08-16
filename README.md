@@ -31,10 +31,15 @@ cd /workspace/your-project
 uv sync --frozen --extra cu130
 ```
 
-The image explicitly uses Vast's `/opt/instance-tools/bin/entrypoint.sh`. Vast
-injects instance values such as `VAST_CONTAINERLABEL` when it creates the
-container, and that entrypoint exports them to `/etc/environment` so they are
-also available from SSH and Jupyter shells.
+The stock base contains the same Vast boot hooks used by the much larger
+`*-auto` images. This image runs those hooks from both supported startup paths:
+the project-owned entrypoint wrapper and `/etc/rc.local`, which Vast's generated
+`/.launch` script invokes when it replaces the image entrypoint. This restores
+the complete upstream initialization sequence—including environment export,
+SSH-key repair, shell setup, provisioning, and supervised services—without
+restoring the duplicate CUDA/PyTorch layers. The build also removes any
+base-layer `authorized_keys` file so Vast can create it afresh when provisioning
+the instance.
 
 `UV_LINK_MODE=copy` is intentional because Vast may mount `/workspace` on a
 filesystem different from the image's `/.uv/cache`. The copy consumes space in
