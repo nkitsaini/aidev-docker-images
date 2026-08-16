@@ -33,6 +33,11 @@ RUN --mount=type=bind,source=pylock.toml,target=/tmp/pylock.toml,readonly \
         -r /tmp/pylock.toml \
     && rm -rf /tmp/cache-warm-venv
 
-# Inherit Vast's entrypoint directly; the previous wrapper only exec'd this
-# same file and created two unnecessary image layers.
+# Vast injects instance metadata (such as VAST_CONTAINERLABEL) at container
+# creation. Its entrypoint runs the boot hooks that persist that metadata to
+# /etc/environment, making it available in SSH and Jupyter shells. Set this
+# explicitly so startup does not depend on inherited image configuration.
+ENTRYPOINT ["/opt/instance-tools/bin/entrypoint.sh"]
+CMD []
+
 WORKDIR /workspace

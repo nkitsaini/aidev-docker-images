@@ -31,6 +31,11 @@ cd /workspace/your-project
 uv sync --frozen --extra cu130
 ```
 
+The image explicitly uses Vast's `/opt/instance-tools/bin/entrypoint.sh`. Vast
+injects instance values such as `VAST_CONTAINERLABEL` when it creates the
+container, and that entrypoint exports them to `/etc/environment` so they are
+also available from SSH and Jupyter shells.
+
 `UV_LINK_MODE=copy` is intentional because Vast may mount `/workspace` on a
 filesystem different from the image's `/.uv/cache`. The copy consumes space in
 the project virtual environment, but avoids cross-filesystem link failures.
